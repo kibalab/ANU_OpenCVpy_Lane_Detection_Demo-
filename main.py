@@ -16,7 +16,7 @@ while(cap.isOpened()):
     # 영상 크기를 조정합니다.
     resized_frame = cv2.resize(frame, (1920, 1080))
 
-    roi = resized_frame[int(1080/2):1000, 0:1920]
+    roi = resized_frame[int(108*6.5):1000, 0:1920]
 
     # HSV 색 공간으로 변환합니다.
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
@@ -38,7 +38,7 @@ while(cap.isOpened()):
     edges = cv2.Canny(blurred, 50, 150)
 
     # 허프 변환을 사용하여 직선을 검출합니다.
-    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 100, minLineLength=300, maxLineGap=10)
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 80, minLineLength=30, maxLineGap=50)
 
     # 검출된 직선을 원본 영상에 그립니다.
     if lines is not None:
@@ -50,7 +50,7 @@ while(cap.isOpened()):
             # 각 선의 기울기를 계산합니다
             slope = (y2 - y1) / (x2 - x1)
             # 기울기가 45도 이상인 선만 그립니다
-            if abs(np.degrees(np.arctan(slope))) >= 35:
+            if abs(np.degrees(np.arctan(slope))) >= 25:
                 if not merged_lines:
                     merged_lines.append([x1, y1, x2, y2])
                 else:
@@ -73,7 +73,7 @@ while(cap.isOpened()):
                     if not merged:
                         merged_lines.append([x1, y1, x2, y2])
 
-        if(len(prev_frames_lines) > 20):
+        if(len(prev_frames_lines) > 40):
             prev_frames_lines.pop(0)
         prev_frames_lines.append(merged_lines)
 
@@ -96,8 +96,12 @@ while(cap.isOpened()):
             angle = np.degrees(np.arctan2(y2 - y1, x2 - x1))
             line_data.append([center_x, center_y, angle])
 
+    try:
     # K-Means 클러스터링을 사용하여 선분을 2개 그룹으로 나눕니다.
-    kmeans = KMeans(n_clusters=2, random_state=1, n_init=10).fit(line_data)
+        kmeans = KMeans(n_clusters=2, random_state=1, n_init=5).fit(line_data)
+    except:
+        cv2.imshow("White Lane Detection", resized_frame)
+        continue;
 
     # 각 그룹의 중점과 각도를 계산합니다.
     group_centers = kmeans.cluster_centers_
